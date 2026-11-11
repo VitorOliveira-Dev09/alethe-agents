@@ -42,7 +42,10 @@ jobs:
       # createUpdaterArtifacts is on in tauri.conf.json and would fail without the signing key,
       # so it is switched off for this build only. NSIS is the installer people actually use.
       - name: Build the NSIS installer
-        run: npm run tauri -- build --bundles nsis --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
+        shell: bash
+        run: |
+          echo '{"bundle":{"createUpdaterArtifacts":false}}' > src-tauri/tauri.ci.json
+          npm run tauri -- build --bundles nsis --config src-tauri/tauri.ci.json
 
       - name: Upload the installer
         uses: actions/upload-artifact@v4
