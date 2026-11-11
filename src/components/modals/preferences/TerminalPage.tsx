@@ -1,9 +1,10 @@
 import { Activity, Minus, Plus, RotateCcw } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { cliPathMatchesAgent } from '../../../lib/agentCliPath'
 import { agentLabel, resolveAgentCliCommand } from '../../../lib/agentProviders'
 import { pickFile } from '../../../lib/dialog'
+import { listWslDistros } from '../../../lib/tauri'
 import { useT, useTDynamic } from '../../../lib/i18n'
 import { isMacOS, isWindows } from '../../../lib/platform'
 import { countLiveResumablePanes, resetLastSession } from '../../../lib/resetLastSession'
@@ -81,6 +82,14 @@ export function TerminalPage({ enabledCount }: { enabledCount: number }) {
     window.dispatchEvent(new CustomEvent('alethe:terminal-font-changed'))
   }
 
+  const [wslDistros, setWslDistros] = useState<string[]>([])
+  useEffect(() => {
+    if (!isWindows()) return
+    void listWslDistros()
+      .then(setWslDistros)
+      .catch(() => {})
+  }, [])
+
   const onPickShellPath = async () => {
     const picked = await pickFile({
       title: t('prefs.shellPathPick'),
@@ -141,6 +150,37 @@ export function TerminalPage({ enabledCount }: { enabledCount: number }) {
           </button>
         </div>
       </SettingsSection>
+
+      {isWindows() ? (
+        <SettingsSection
+          id="wsl-first"
+          title={t('prefs.wslFirst')}
+          description={t('prefs.wslFirstDesc')}
+        >
+          <label>
+            <span>{t('prefs.wslFirstDistro')}</span>
+            <select
+              className={controls.input}
+              value={preferences.wslPreferredDistro ?? ''}
+              onChange={(event) =>
+                setPreferences({ wslPreferredDistro: event.target.value || null })
+              }
+            >
+              <option value="">{t('prefs.wslFirstOff')}</option>
+              {[
+                ...new Set([
+                  ...wslDistros,
+                  ...(preferences.wslPreferredDistro ? [preferences.wslPreferredDistro] : []),
+                ]),
+              ].map((distro) => (
+                <option key={distro} value={distro}>
+                  {distro}
+                </option>
+              ))}
+            </select>
+          </label>
+        </SettingsSection>
+      ) : null}
 
       <SettingsSection
         id="spawn-concurrency"

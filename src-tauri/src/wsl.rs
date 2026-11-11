@@ -75,6 +75,32 @@ pub fn set_integration_enabled(enabled: bool) {
     clear_probe_caches();
 }
 
+/// "WSL-first" mode: the distro whose home holds the user-level provider config (`~/.claude`,
+/// `~/.codex`, MCPs, skills) instead of the Windows profile. `None` keeps the legacy behaviour.
+static PREFERRED_DISTRO: Mutex<Option<String>> = Mutex::new(None);
+
+/// The preferred distro, or `None` while WSL-first is off or the integration is disabled.
+pub fn preferred_distro() -> Option<String> {
+    if !integration_enabled() {
+        return None;
+    }
+    PREFERRED_DISTRO.lock().ok().and_then(|guard| guard.clone())
+}
+
+pub fn set_preferred_distro(distro: Option<String>) {
+    let distro = distro
+        .map(|d| d.trim().to_string())
+        .filter(|d| !d.is_empty());
+    if let Ok(mut guard) = PREFERRED_DISTRO.lock() {
+        *guard = distro;
+    }
+}
+
+/// UNC home of the preferred distro, when WSL-first is active and the probe succeeds.
+pub fn preferred_home_unc() -> Option<String> {
+    distro_home_unc(&preferred_distro()?)
+}
+
 fn clear_probe_caches() {
     DISTRO_CACHE.clear();
     CLI_CACHE.clear();
@@ -87,11 +113,46 @@ fn clear_probe_caches() {
 pub(crate) static TOGGLE_LOCK: Mutex<()> = Mutex::new(());
 
 /// The single gate every WSL decision point goes through: `None` while the integration is off.
+///
+/// With WSL-first on, a Windows drive path (`C:\work\app`) also targets the preferred distro, at
+/// its `/mnt/c/work/app` mount, so every terminal runs inside the distro.
 pub fn wsl_target(cwd: &str) -> Option<WslPath> {
     if !integration_enabled() {
         return None;
     }
-    parse_wsl_unc(cwd)
+    wsl_target_with(cwd, preferred_distro().as_deref())
+}
+
+fn wsl_target_with(cwd: &str, preferred: Option<&str>) -> Option<WslPath> {
+    parse_wsl_unc(cwd).or_else(|| {
+        let distro = preferred?;
+        Some(WslPath {
+            distro: distro.to_string(),
+            linux_path: windows_drive_to_mnt(cwd)?,
+        })
+    })
+}
+
+/// `C:\Users\dev\app` → `/mnt/c/Users/dev/app`. Anything that is not a drive path (a UNC share,
+/// a relative path) has no mount and yields `None`.
+pub fn windows_drive_to_mnt(path: &str) -> Option<String> {
+    let normalized = path.trim().replace('\\', "/");
+    let mut chars = normalized.chars();
+    let drive = chars.next().filter(char::is_ascii_alphabetic)?;
+    let rest = normalized[1..].strip_prefix(':')?;
+    if !rest.is_empty() && !rest.starts_with('/') {
+        return None;
+    }
+    let tail: Vec<&str> = rest
+        .split('/')
+        .filter(|segment| !segment.is_empty())
+        .collect();
+    let drive = drive.to_ascii_lowercase();
+    Some(if tail.is_empty() {
+        format!("/mnt/{drive}")
+    } else {
+        format!("/mnt/{drive}/{}", tail.join("/"))
+    })
 }
 
 pub fn parse_wsl_unc(path: &str) -> Option<WslPath> {
@@ -649,6 +710,11 @@ fn shell_quote(value: &str) -> String {
 #[tauri::command]
 pub fn set_wsl_integration_enabled(enabled: bool) {
     set_integration_enabled(enabled);
+}
+
+#[tauri::command]
+pub fn set_wsl_preferred_distro(distro: Option<String>) {
+    set_preferred_distro(distro);
 }
 
 #[tauri::command]
@@ -1324,6 +1390,63 @@ mod tests {
             probe_caches_are_empty(),
             "turning it back on must not serve what was cached while it was off"
         );
+    }
+
+    #[test]
+    fn the_preferred_distro_is_trimmed_and_hidden_while_the_integration_is_disabled() {
+        let _guard = TOGGLE_LOCK.lock().unwrap();
+
+        set_preferred_distro(Some("  Ubuntu ".into()));
+        assert_eq!(preferred_distro().as_deref(), Some("Ubuntu"));
+
+        set_preferred_distro(Some("   ".into()));
+        assert_eq!(preferred_distro(), None);
+
+        set_preferred_distro(Some("Ubuntu".into()));
+        set_integration_enabled(false);
+        assert_eq!(preferred_distro(), None);
+        assert_eq!(preferred_home_unc(), None);
+
+        set_integration_enabled(true);
+        set_preferred_distro(None);
+        assert_eq!(preferred_distro(), None);
+    }
+
+    #[test]
+    fn maps_windows_drive_paths_to_their_wsl_mount() {
+        assert_eq!(
+            windows_drive_to_mnt(r"C:\Users\dev\app"),
+            Some("/mnt/c/Users/dev/app".into())
+        );
+        assert_eq!(windows_drive_to_mnt("d:/work/"), Some("/mnt/d/work".into()));
+        assert_eq!(windows_drive_to_mnt(r"E:\"), Some("/mnt/e".into()));
+        assert_eq!(windows_drive_to_mnt("C:"), Some("/mnt/c".into()));
+        assert_eq!(windows_drive_to_mnt(r"\\server\share\x"), None);
+        assert_eq!(windows_drive_to_mnt("relative/path"), None);
+        assert_eq!(windows_drive_to_mnt("C:relative"), None);
+        assert_eq!(windows_drive_to_mnt(""), None);
+    }
+
+    #[test]
+    fn wsl_first_sends_drive_cwds_to_the_preferred_distro_and_leaves_unc_paths_alone() {
+        let drive = r"C:\Users\dev\app";
+        assert_eq!(wsl_target_with(drive, None), None);
+        assert_eq!(
+            wsl_target_with(drive, Some("Ubuntu")),
+            Some(WslPath {
+                distro: "Ubuntu".into(),
+                linux_path: "/mnt/c/Users/dev/app".into(),
+            })
+        );
+        // An explicit WSL path keeps its own distro, whatever the preference says.
+        assert_eq!(
+            wsl_target_with(r"\\wsl.localhost\Debian\home\dev", Some("Ubuntu")),
+            Some(WslPath {
+                distro: "Debian".into(),
+                linux_path: "/home/dev".into(),
+            })
+        );
+        assert_eq!(wsl_target_with(r"\\server\share", Some("Ubuntu")), None);
     }
 
     #[test]

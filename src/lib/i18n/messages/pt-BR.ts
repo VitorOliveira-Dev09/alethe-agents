@@ -833,6 +833,11 @@ export const ptBR: Record<MessageKey, string> = {
   'prefs.spawnConcurrencyDecrease': 'Menos spawns em paralelo',
   'prefs.spawnConcurrencyIncrease': 'Mais spawns em paralelo',
   'prefs.spawnConcurrencyReset': 'Voltar ao padrão',
+  'prefs.wslFirst': 'Modo WSL-first',
+  'prefs.wslFirstDesc':
+    'Lê as configs dos agentes (~/.claude, ~/.codex, MCPs, skills) de uma distro WSL em vez do perfil do Windows. Vale para novas sessões.',
+  'prefs.wslFirstDistro': 'Distro',
+  'prefs.wslFirstOff': 'Desligado (usar perfil do Windows)',
   'prefs.gsdSyncModelsTitle': 'Cadeia de fallback de modelos do GSD Sync',
   'prefs.gsdSyncModelsDesc':
     'Modelos reserva pra sessão-filha do GSD Sync, tentados em ordem se o modelo espelhado falhar.',

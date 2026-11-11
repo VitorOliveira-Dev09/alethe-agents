@@ -52,12 +52,15 @@ export const AletheBridgePlugin = async ({ directory }) => {
 "#;
 
 fn plugin_dir() -> Option<PathBuf> {
-    Some(
-        dirs_next::home_dir()?
-            .join(".config")
-            .join("opencode")
-            .join("plugin"),
-    )
+    let segments = [".config", "opencode", "plugin"];
+    // With WSL-first on, opencode runs in the distro, so its plugin must land in the distro home.
+    crate::provider_common::provider_home_dir(&segments).or_else(|| {
+        Some(
+            segments
+                .iter()
+                .fold(dirs_next::home_dir()?, |path, segment| path.join(segment)),
+        )
+    })
 }
 
 pub fn ensure_installed() {

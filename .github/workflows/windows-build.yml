@@ -1,0 +1,53 @@
+name: Windows build (fork)
+
+# Manual build of the Windows installer only, for testing changes on a fork. It does not publish a
+# release and does not need the updater signing key: the installer comes out as a workflow
+# artifact. Run it from Actions -> "Windows build (fork)" -> Run workflow.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Windows x64
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      # The `cfg(windows)` code (WSL probing, launcher lookup) is never compiled on Linux, so this
+      # is the first place those paths are type-checked and tested. It does not block the build:
+      # a failure here is reported, the installer is still produced.
+      - name: Rust tests (Windows-only code paths)
+        continue-on-error: true
+        working-directory: src-tauri
+        run: cargo test --lib
+
+      # createUpdaterArtifacts is on in tauri.conf.json and would fail without the signing key,
+      # so it is switched off for this build only. NSIS is the installer people actually use.
+      - name: Build the NSIS installer
+        run: npm run tauri -- build --bundles nsis --config "{\"bundle\":{\"createUpdaterArtifacts\":false}}"
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Alethe-windows-x64-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14

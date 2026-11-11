@@ -19,3 +19,8 @@ export async function wslDistroHome(distro: string): Promise<string | null> {
 export async function setWslIntegrationEnabled(enabled: boolean): Promise<void> {
   return invoke<void>('set_wsl_integration_enabled', { enabled })
 }
+
+/** WSL-first: user-level provider config (`~/.claude`, MCPs, skills) is read from this distro's home. */
+export async function setWslPreferredDistro(distro: string | null): Promise<void> {
+  return invoke<void>('set_wsl_preferred_distro', { distro })
+}

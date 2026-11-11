@@ -489,6 +489,7 @@ pub fn run() {
             wsl::find_wsl_cli,
             wsl::wsl_distro_home,
             wsl::set_wsl_integration_enabled,
+            wsl::set_wsl_preferred_distro,
             cli_resolver::probe_install_toolchain,
             cli_resolver::agent_cli_version,
             cli_launch::cli_take_pending_open,

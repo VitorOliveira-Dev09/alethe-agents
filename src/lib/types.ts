@@ -904,6 +904,8 @@ export type Preferences = {
    * (`pwsh` → `powershell` on Windows, `$SHELL` elsewhere).
    */
   shellPath: string | null
+  /** WSL-first (Windows): distro whose home holds `~/.claude`, MCPs and skills. `null` = off. */
+  wslPreferredDistro: string | null
   /** Font stack for the terminal. A Nerd Font is required for prompts such as oh-my-posh. */
   terminalFontFamily: string
   // Default false keeps scrolling and searching with the pane in the classic renderer.
@@ -1104,6 +1106,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   orchestratorShortcuts: null,
   workerRuleSets: null,
   shellPath: null,
+  wslPreferredDistro: null,
   terminalFontFamily: DEFAULT_TERMINAL_FONT_FAMILY,
   claudeFullscreen: false,
   pomodoroWorkMinutes: 25,

@@ -260,6 +260,7 @@ export function normalizePreferences(raw: LegacyPreferences | undefined): Prefer
     ),
     pomodoroSession: normalizePomodoroSession(raw?.pomodoroSession),
     shellPath: normalizeNonEmptyString(raw?.shellPath),
+    wslPreferredDistro: normalizeNonEmptyString(raw?.wslPreferredDistro),
     terminalFontFamily:
       normalizeNonEmptyString(raw?.terminalFontFamily) ?? DEFAULT_TERMINAL_FONT_FAMILY,
     claudeFullscreen: Boolean(raw?.claudeFullscreen),

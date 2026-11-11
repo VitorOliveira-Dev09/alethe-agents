@@ -74,7 +74,12 @@ import { intlLocale, translate, useT } from './lib/i18n'
 import { applyLegacyPluginMigrations } from './lib/plugins'
 import { visibilityFromPanelResize, widthFromPanelResize } from './lib/sidebarPanelState'
 import { setMaxConcurrentSpawns } from './lib/spawnQueue'
-import { ghosttyKillAll, setWindowOpacity, setWslIntegrationEnabled } from './lib/tauri'
+import {
+  ghosttyKillAll,
+  setWindowOpacity,
+  setWslIntegrationEnabled,
+  setWslPreferredDistro,
+} from './lib/tauri'
 import {
   getLastCrashReport,
   orchestratorDefaultRuleSets,
@@ -274,6 +279,12 @@ export default function App() {
     if (!hydrated) return
     void setWslIntegrationEnabled(wslEnabled).catch(() => {})
   }, [hydrated, wslEnabled])
+
+  const wslPreferredDistro = useProjectsStore((s) => s.preferences.wslPreferredDistro)
+  useEffect(() => {
+    if (!hydrated) return
+    void setWslPreferredDistro(wslPreferredDistro).catch(() => {})
+  }, [hydrated, wslPreferredDistro])
 
   useEffect(() => {
     if (!hydrated) return
