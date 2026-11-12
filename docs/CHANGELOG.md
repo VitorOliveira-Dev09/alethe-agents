@@ -617,6 +617,10 @@ Notable user-facing changes to **Alethe** are documented here. The format is bas
 - **WSL tab no longer asks to install WSL.** Opening a WSL session reported "not installed" even
   with WSL present, because the launcher lookup searched for `wsl.exe.exe`. It now finds `wsl.exe`
   as written.
+- **Claude in WSL runs the capture hooks.** The hooks Alethe writes for a Claude running in WSL
+  (ai-memory capture) named Windows paths such as `C:\Users\...\ai-memory.exe`, which the distro
+  could not run. They now use the `/mnt/c/...` path. With WSL-first, Windows folders also get the
+  WSL launch settings (`--settings`, `--mcp-config`) like `\\wsl.localhost` ones already did.
 
 - ai-memory installs accept Unix archives with a root directory entry, find manually installed
   binaries outside the app PATH, and avoid duplicating Claude Code capture hooks already configured.

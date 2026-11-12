@@ -133,6 +133,32 @@ fn wsl_target_with(cwd: &str, preferred: Option<&str>) -> Option<WslPath> {
     })
 }
 
+/// Rewrites every Windows drive path inside `text` to its WSL mount, so a command line built for
+/// Windows (`C:\Users\dev\tool.exe --data-dir C:\Users\dev\data`) can run in the distro, where
+/// `.exe` files stay executable through interop. A quoted path may contain spaces; an unquoted one
+/// ends at whitespace. The letter of a URL scheme (`http://`) is not a drive.
+pub fn windows_paths_to_mnt(text: &str) -> String {
+    use regex::{Captures, Regex};
+    use std::sync::OnceLock;
+
+    static PATTERNS: OnceLock<[Regex; 3]> = OnceLock::new();
+    let [double, single, bare] = PATTERNS.get_or_init(|| {
+        [
+            Regex::new(r#""([A-Za-z]:[\\/][^"]*)""#).expect("valid regex"),
+            Regex::new(r"'([A-Za-z]:[\\/][^']*)'").expect("valid regex"),
+            Regex::new(r#"(^|[^A-Za-z0-9])([A-Za-z]:[\\/][^\s'"]*)"#).expect("valid regex"),
+        ]
+    });
+    let convert = |path: &str| windows_drive_to_mnt(path).unwrap_or_else(|| path.to_string());
+
+    let text = double.replace_all(text, |caps: &Captures| format!("\"{}\"", convert(&caps[1])));
+    let text = single.replace_all(&text, |caps: &Captures| format!("'{}'", convert(&caps[1])));
+    bare.replace_all(&text, |caps: &Captures| {
+        format!("{}{}", &caps[1], convert(&caps[2]))
+    })
+    .into_owned()
+}
+
 /// `C:\Users\dev\app` → `/mnt/c/Users/dev/app`. Anything that is not a drive path (a UNC share,
 /// a relative path) has no mount and yields `None`.
 pub fn windows_drive_to_mnt(path: &str) -> Option<String> {
@@ -1410,6 +1436,25 @@ mod tests {
         set_integration_enabled(true);
         set_preferred_distro(None);
         assert_eq!(preferred_distro(), None);
+    }
+
+    #[test]
+    fn rewrites_windows_paths_inside_a_command_line() {
+        assert_eq!(
+            windows_paths_to_mnt(
+                r"C:\Users\PC\AppData\Local\app\ai-memory.exe --data-dir C:\Users\PC\data hook --event stop --server-url http://127.0.0.1:49374"
+            ),
+            "/mnt/c/Users/PC/AppData/Local/app/ai-memory.exe --data-dir /mnt/c/Users/PC/data hook --event stop --server-url http://127.0.0.1:49374"
+        );
+        assert_eq!(
+            windows_paths_to_mnt(r#""C:\Program Files\x\tool.exe" --cfg 'D:\My Data\c.json'"#),
+            r#""/mnt/c/Program Files/x/tool.exe" --cfg '/mnt/d/My Data/c.json'"#
+        );
+        // Nothing to rewrite: a URL, a Linux path and plain words stay as they are.
+        assert_eq!(
+            windows_paths_to_mnt("curl http://127.0.0.1:9123/hook /home/dev/x a:b"),
+            "curl http://127.0.0.1:9123/hook /home/dev/x a:b"
+        );
     }
 
     #[test]

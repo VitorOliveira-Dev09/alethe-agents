@@ -80,6 +80,7 @@ import {
   setWslIntegrationEnabled,
   setWslPreferredDistro,
 } from './lib/tauri'
+import { setPreferredWslDistro } from './lib/wsl'
 import {
   getLastCrashReport,
   orchestratorDefaultRuleSets,
@@ -283,6 +284,7 @@ export default function App() {
   const wslPreferredDistro = useProjectsStore((s) => s.preferences.wslPreferredDistro)
   useEffect(() => {
     if (!hydrated) return
+    setPreferredWslDistro(wslPreferredDistro)
     void setWslPreferredDistro(wslPreferredDistro).catch(() => {})
   }, [hydrated, wslPreferredDistro])
 

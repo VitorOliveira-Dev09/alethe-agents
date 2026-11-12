@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { toWslGuestPath, wslDistroRootUnc, wslTargetFor } from './wsl'
+import { setPreferredWslDistro, toWslGuestPath, wslDistroRootUnc, wslTargetFor } from './wsl'
 
 // The parser is reached only through the feature gate; enabled, `wslTargetFor` is that parser.
 const parse = (path: string) => wslTargetFor(path, true)
@@ -104,5 +104,35 @@ describe('wslTargetFor', () => {
     expect(wslTargetFor(null, true)).toBeNull()
     expect(wslTargetFor(undefined, true)).toBeNull()
     expect(wslTargetFor(String.raw`C:\projects\app`, true)).toBeNull()
+  })
+})
+
+describe('wslTargetFor with a preferred distro (WSL-first)', () => {
+  afterEach(() => setPreferredWslDistro(null))
+
+  it('sends a Windows drive folder to the preferred distro through its mount', () => {
+    setPreferredWslDistro(' Ubuntu ')
+    expect(wslTargetFor(String.raw`C:\work\app`, true)).toEqual({
+      distro: 'Ubuntu',
+      linuxPath: '/mnt/c/work/app',
+    })
+    expect(wslTargetFor('d:/', true)).toEqual({ distro: 'Ubuntu', linuxPath: '/mnt/d' })
+  })
+
+  it('keeps the distro of an explicit WSL path and leaves non-drive paths alone', () => {
+    setPreferredWslDistro('Ubuntu')
+    expect(wslTargetFor(String.raw`\\wsl.localhost\Debian\home\dev`, true)).toEqual({
+      distro: 'Debian',
+      linuxPath: '/home/dev',
+    })
+    expect(wslTargetFor(String.raw`\\server\share`, true)).toBeNull()
+    expect(wslTargetFor('relative/path', true)).toBeNull()
+  })
+
+  it('is off while the integration is disabled or no distro is preferred', () => {
+    setPreferredWslDistro('Ubuntu')
+    expect(wslTargetFor(String.raw`C:\work\app`, false)).toBeNull()
+    setPreferredWslDistro(null)
+    expect(wslTargetFor(String.raw`C:\work\app`, true)).toBeNull()
   })
 })
