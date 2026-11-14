@@ -188,10 +188,25 @@ pub fn command_builder_for_terminal(
 #[tauri::command]
 pub async fn find_cli_launcher(agent: String) -> Option<String> {
     tokio::task::spawn_blocking(move || {
+        if let Some(found) = find_cli_in_preferred_distro(&agent, false) {
+            return Some(found);
+        }
         find_windows_cli_launcher(&agent).map(|p| p.to_string_lossy().to_string())
     })
     .await
     .unwrap_or(None)
+}
+
+/// WSL-first: the CLI's Linux path inside the preferred distro, so detection (and the "not
+/// found" overlay that gates a terminal launch) answers for the distro the user actually works
+/// in. `None` while the mode is off, which leaves the Windows lookup as the only answer.
+fn find_cli_in_preferred_distro(command: &str, refresh: bool) -> Option<String> {
+    // `wsl.exe` is the Windows-side launcher, not a program installed inside a distro.
+    if command.to_ascii_lowercase().ends_with(".exe") {
+        return None;
+    }
+    let distro = crate::wsl::preferred_distro()?;
+    crate::wsl::resolve_cli_in_distro(&distro, canonical_cli_name(command), refresh)
 }
 
 static LAUNCHER_CACHE: OnceLock<std::sync::Mutex<HashMap<String, PathBuf>>> = OnceLock::new();
@@ -702,6 +717,9 @@ pub fn invalidate_rebuilt_path() {
 pub async fn refresh_cli_launcher(command: String) -> Option<String> {
     tokio::task::spawn_blocking(move || {
         invalidate_rebuilt_path();
+        if let Some(found) = find_cli_in_preferred_distro(&command, true) {
+            return Some(found);
+        }
         find_windows_cli_launcher(&command).map(|path| path.to_string_lossy().to_string())
     })
     .await
@@ -1171,6 +1189,19 @@ mod tests {
             launcher_file_names("claude"),
             ["claude.cmd", "claude.exe", "claude.bat", "claude.ps1"]
         );
+    }
+
+    #[test]
+    fn the_wsl_launcher_is_never_probed_inside_the_preferred_distro() {
+        assert_eq!(find_cli_in_preferred_distro("wsl.exe", false), None);
+        assert_eq!(find_cli_in_preferred_distro("WSL.EXE", true), None);
+    }
+
+    #[test]
+    fn the_preferred_distro_lookup_is_skipped_unless_wsl_first_is_on() {
+        let _guard = crate::wsl::TOGGLE_LOCK.lock().unwrap();
+        crate::wsl::set_preferred_distro(None);
+        assert_eq!(find_cli_in_preferred_distro("claude", false), None);
     }
 
     #[test]

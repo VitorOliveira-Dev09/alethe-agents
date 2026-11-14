@@ -816,6 +816,11 @@ export const en = {
   'prefs.spawnConcurrencyDecrease': 'Fewer parallel spawns',
   'prefs.spawnConcurrencyIncrease': 'More parallel spawns',
   'prefs.spawnConcurrencyReset': 'Reset to default',
+  'prefs.wslFirst': 'WSL-first mode',
+  'prefs.wslFirstDesc':
+    'Read agent config (~/.claude, ~/.codex, MCPs, skills) from a WSL distro instead of the Windows profile. Takes effect for new sessions.',
+  'prefs.wslFirstDistro': 'Distro',
+  'prefs.wslFirstOff': 'Off (use Windows profile)',
   'prefs.gsdSyncModelsTitle': 'GSD Sync model fallback chain',
   'prefs.gsdSyncModelsDesc':
     'Backup models for the GSD Sync child session, tried in order if the mirrored model fails.',

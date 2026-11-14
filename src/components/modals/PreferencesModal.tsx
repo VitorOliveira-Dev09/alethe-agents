@@ -356,6 +356,13 @@ export function PreferencesModal() {
       },
       {
         category: 'terminal',
+        target: 'wsl-first',
+        label: t('prefs.wslFirst'),
+        description: t('prefs.wslFirstDesc'),
+        keywords: 'wsl linux ubuntu distro windows claude codex mcp skills home perfil profile',
+      },
+      {
+        category: 'terminal',
         target: 'spawn-concurrency',
         label: t('prefs.spawnConcurrency'),
         description: t('prefs.spawnConcurrencyDesc'),

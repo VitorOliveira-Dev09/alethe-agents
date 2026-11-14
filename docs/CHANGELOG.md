@@ -12,6 +12,13 @@ Notable user-facing changes to **Alethe** are documented here. The format is bas
 
 ### Added
 
+- **WSL-first mode (Windows).** Preferences → Terminal has a new "WSL-first mode" setting. Pick a
+  WSL distro and Alethe reads agent config (`~/.claude`, `~/.codex`, MCPs, skills, usage/quota) from
+  that distro's home instead of the Windows profile, finds agent CLIs installed in the distro, and
+  runs every terminal inside it, mapping Windows folders such as `C:\work\app` to
+  `/mnt/c/work/app`. Projects already opened from `\\wsl.localhost\<distro>` keep their own
+  distro. It is off by default. Windows folders are reached through the `/mnt` mount, which is
+  slower than the distro's own disk.
 - **Voice plugin.** A new plugin in the catalogue, [Voice](https://github.com/Kc1t/alethe-voice),
   brings the voice conversation from #336 by @SrAmaral: talk to an agent tab, hear its progress and
   replies, answer permission prompts by voice, and follow along in the floating HUD. Its settings sit

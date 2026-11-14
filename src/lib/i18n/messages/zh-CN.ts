@@ -729,6 +729,11 @@ export const zhCN: Record<MessageKey, string> = {
   'prefs.spawnConcurrencyDecrease': '平行生成较少',
   'prefs.spawnConcurrencyIncrease': '更多平行生成',
   'prefs.spawnConcurrencyReset': '重置为默认',
+  'prefs.wslFirst': 'WSL 优先模式',
+  'prefs.wslFirstDesc':
+    '从 WSL 发行版而不是 Windows 用户目录读取代理配置（~/.claude、~/.codex、MCP、技能）。对新会话生效。',
+  'prefs.wslFirstDistro': '发行版',
+  'prefs.wslFirstOff': '关闭（使用 Windows 用户目录）',
   'prefs.gsdSyncModelsTitle': 'GSD 同步模型回退链',
   'prefs.gsdSyncModelsDesc': 'GSD Sync 子会话的备份模型，如果镜像模型失败，则按顺序尝试。',
   'prefs.gsdSyncModelsHint':

@@ -61,6 +61,7 @@ fn home() -> Option<PathBuf> {
     std::env::var_os("KIMI_CODE_HOME")
         .filter(|v| !v.is_empty())
         .map(PathBuf::from)
+        .or_else(|| crate::provider_common::provider_home_dir(&[".kimi-code"]))
         .or_else(|| dirs_next::home_dir().map(|p| p.join(".kimi-code")))
 }
 

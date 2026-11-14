@@ -32,7 +32,29 @@ export function toWslGuestPath(path: string): string | null {
   return parseWslUncPath(path)?.linuxPath ?? null
 }
 
+let preferredDistro: string | null = null
+
+/**
+ * WSL-first: the distro every Windows folder runs in. Mirror of `set_preferred_distro` in
+ * `src-tauri/src/wsl.rs`, so the launch code and the backend agree on what is a WSL terminal.
+ */
+export function setPreferredWslDistro(distro: string | null | undefined): void {
+  preferredDistro = distro?.trim() || null
+}
+
+/** Mirror of `windows_drive_to_mnt` in `src-tauri/src/wsl.rs`: `C:\work\app` → `/mnt/c/work/app`. */
+function windowsDriveToMnt(path: string): string | null {
+  const match = /^([A-Za-z]):(?:[\\/](.*))?$/.exec(path.trim())
+  if (!match) return null
+  const tail = (match[2] ?? '').split(/[\\/]/).filter(Boolean)
+  const mount = `/mnt/${match[1].toLowerCase()}`
+  return tail.length ? `${mount}/${tail.join('/')}` : mount
+}
+
 export function wslTargetFor(cwd: string | null | undefined, enabled: boolean): WslUncPath | null {
   if (!enabled) return null
-  return parseWslUncPath(cwd ?? '')
+  const unc = parseWslUncPath(cwd ?? '')
+  if (unc || !preferredDistro) return unc
+  const linuxPath = windowsDriveToMnt(cwd ?? '')
+  return linuxPath ? { distro: preferredDistro, linuxPath } : null
 }

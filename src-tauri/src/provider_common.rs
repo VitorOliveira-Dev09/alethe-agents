@@ -3,9 +3,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
-/// Resolve `~/<segments>` a partir de `USERPROFILE` (Windows) ou `HOME` (Unix).
+/// Resolves `~/<segments>` from `USERPROFILE` (Windows) or `HOME` (Unix). With WSL-first on, it
+/// uses the preferred distro's home (`\\wsl.localhost\<distro>\home\<user>`) instead.
 pub(crate) fn provider_home_dir(segments: &[&str]) -> Option<PathBuf> {
-    let home = host_home_dir()?;
+    let home = crate::wsl::preferred_home_unc()
+        .map(PathBuf::from)
+        .or_else(host_home_dir)?;
     Some(segments.iter().fold(home, |acc, seg| acc.join(seg)))
 }
 

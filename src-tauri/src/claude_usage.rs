@@ -61,8 +61,12 @@ fn discover_token() -> Option<String> {
     }
 
     // 2. ~/.claude/.credentials.json (where Claude Code actually stores it)
-    if let Some(home) = dirs_next::home_dir() {
-        let cred_path = home.join(".claude").join(".credentials.json");
+    // With WSL-first on, this is the preferred distro's home rather than the Windows profile.
+    let cred_path = crate::provider_common::provider_home_dir(&[".claude", ".credentials.json"])
+        .or_else(|| {
+            dirs_next::home_dir().map(|home| home.join(".claude").join(".credentials.json"))
+        });
+    if let Some(cred_path) = cred_path {
         if let Some(tok) = read_credentials_file_with_retry(&cred_path) {
             return Some(tok);
         }

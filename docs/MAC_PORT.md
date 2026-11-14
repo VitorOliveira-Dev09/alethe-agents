@@ -36,6 +36,10 @@ Mac synced through: `v1.7.0` (`80e44a3`)
 
 ## Unreleased
 
+- `skip (Windows-only: WSL does not exist on macOS)` · `platform` · feat(wsl): add a WSL-first mode that runs agents and reads their config from a chosen distro
+  - Files: `src-tauri/src/wsl.rs`, `src-tauri/src/provider_common.rs`, `src/components/modals/preferences/TerminalPage.tsx`
+  - Contract: additive `preferences.wslPreferredDistro` string or `null` in `projects.json`, excluded from Cloud sync because it is specific to one machine; the Mac app can ignore it.
+
 - `pending` · `contract` · feat(terminal): preserve pane scroll and make Claude Code fullscreen rendering optional
   - Commit: Merge pull request #322 from MarkHiarley/fix/terminal-scroll-ownership
   - Also: `9135adde` fix(terminal): keep a pane's scroll with the reader; `8657a542` feat(terminal): make Claude Code's fullscreen renderer a preference; `0d1f31da` fix(terminal): close the gaps found porting #322
