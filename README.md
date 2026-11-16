@@ -455,11 +455,12 @@ Thanks to everyone helping shape Alethe.
   <a href="https://github.com/afthex"><img src="https://github.com/afthex.png?size=100" width="80" height="80" alt="afthex" title="afthex" /></a>
   <a href="https://github.com/MarkHiarley"><img src="https://github.com/MarkHiarley.png?size=100" width="80" height="80" alt="MarkHiarley" title="MarkHiarley" /></a>
   <a href="https://github.com/potatoiscompiled"><img src="https://github.com/potatoiscompiled.png?size=100" width="80" height="80" alt="potatoiscompiled" title="potatoiscompiled" /></a>
-  <a href="https://github.com/Arthurandrealmeida"><img src="https://github.com/Arthurandrealmeida.png?size=100" width="80" height="80" alt="Arthurandrealmeida" title="Arthurandrealmeida" /></a>
-  <a href="https://github.com/Erikkaso"><img src="https://github.com/Erikkaso.png?size=100" width="80" height="80" alt="Erikkaso" title="Erikkaso" /></a>
-  <a href="https://github.com/GustavoAlmeidaDoNascimento"><img src="https://github.com/GustavoAlmeidaDoNascimento.png?size=100" width="80" height="80" alt="GustavoAlmeidaDoNascimento" title="GustavoAlmeidaDoNascimento" /></a>
-  <a href="https://github.com/chintanparmar011"><img src="https://github.com/chintanparmar011.png?size=100" width="80" height="80" alt="chintanparmar011" title="chintanparmar011" /></a>
+  <a href="https://github.com/VitorOliveira-Dev09"><img src="https://github.com/VitorOliveira-Dev09.png?size=100" width="80" height="80" alt="VitorOliveira-Dev09" title="VitorOliveira-Dev09" /></a>
   <a href="https://github.com/jo20132012"><img src="https://github.com/jo20132012.png?size=100" width="80" height="80" alt="jo20132012" title="jo20132012" /></a>
+  <a href="https://github.com/chintanparmar011"><img src="https://github.com/chintanparmar011.png?size=100" width="80" height="80" alt="chintanparmar011" title="chintanparmar011" /></a>
+  <a href="https://github.com/GustavoAlmeidaDoNascimento"><img src="https://github.com/GustavoAlmeidaDoNascimento.png?size=100" width="80" height="80" alt="GustavoAlmeidaDoNascimento" title="GustavoAlmeidaDoNascimento" /></a>
+  <a href="https://github.com/Erikkaso"><img src="https://github.com/Erikkaso.png?size=100" width="80" height="80" alt="Erikkaso" title="Erikkaso" /></a>
+  <a href="https://github.com/Arthurandrealmeida"><img src="https://github.com/Arthurandrealmeida.png?size=100" width="80" height="80" alt="Arthurandrealmeida" title="Arthurandrealmeida" /></a>
   <a href="https://github.com/AshSgDe29071999"><img src="https://github.com/AshSgDe29071999.png?size=100" width="80" height="80" alt="AshSgDe29071999" title="AshSgDe29071999" /></a>
   <a href="https://github.com/sthevan027"><img src="https://github.com/sthevan027.png?size=100" width="80" height="80" alt="sthevan027" title="sthevan027" /></a>
   <a href="https://github.com/rlevidev"><img src="https://github.com/rlevidev.png?size=100" width="80" height="80" alt="rlevidev" title="rlevidev" /></a>
