@@ -159,6 +159,46 @@ pub fn windows_paths_to_mnt(text: &str) -> String {
     .into_owned()
 }
 
+/// The program a command line starts: a leading quoted string, or text up to the first space.
+fn leading_program(command: &str) -> (&str, usize) {
+    let command_start = command.len() - command.trim_start().len();
+    let rest = &command[command_start..];
+    for quote in ['"', '\''] {
+        if let Some(inner) = rest.strip_prefix(quote) {
+            if let Some(close) = inner.find(quote) {
+                return (&inner[..close], command_start + 1 + close + 1);
+            }
+        }
+    }
+    let end = rest.find(char::is_whitespace).unwrap_or(rest.len());
+    (&rest[..end], command_start + end)
+}
+
+/// True when the command line starts a Windows program: a drive path ending in `.exe`.
+pub fn starts_with_windows_exe(command: &str) -> bool {
+    let (program, _) = leading_program(command);
+    program.to_ascii_lowercase().ends_with(".exe") && windows_drive_to_mnt(program).is_some()
+}
+
+/// Converts only the program of a command line to its `/mnt` mount and leaves the arguments as
+/// they were written, for a Windows `.exe` that interop runs with Windows-style arguments.
+pub fn windows_exe_to_mnt(command: &str) -> String {
+    let (program, end) = leading_program(command);
+    match windows_drive_to_mnt(program) {
+        Some(mount) => {
+            let start = command.len() - command.trim_start().len();
+            let quote = (end - start > program.len())
+                .then(|| command[start..].chars().next())
+                .flatten();
+            match quote {
+                Some(q) => format!("{q}{mount}{q}{}", &command[end..]),
+                None => format!("{mount}{}", &command[end..]),
+            }
+        }
+        None => command.to_string(),
+    }
+}
+
 /// `C:\Users\dev\app` → `/mnt/c/Users/dev/app`. Anything that is not a drive path (a UNC share,
 /// a relative path) has no mount and yields `None`.
 pub fn windows_drive_to_mnt(path: &str) -> Option<String> {

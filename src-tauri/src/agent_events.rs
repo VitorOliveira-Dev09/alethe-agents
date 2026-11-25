@@ -585,24 +585,36 @@ pub fn agent_hooks_settings_path(
     Ok(path.to_string_lossy().to_string())
 }
 
-/// Rewrites the Windows paths in every hook `command` (and its `args`) to WSL mounts. HTTP hook
-/// URLs are left alone.
+/// Makes the hook commands runnable by a Claude that lives in WSL. The executable of a Windows
+/// program (`C:\...\tool.exe`) has to be named through its `/mnt` mount, but its arguments stay
+/// as they are: interop hands them to a Windows process, which reads `/mnt/c/x` as `\mnt\c\x` on
+/// the current drive and writes (or fails to write) in the wrong place. Any other command has all
+/// of its Windows paths converted. HTTP hook URLs are left alone.
 fn convert_hook_commands_to_wsl(value: &mut serde_json::Value) {
     use serde_json::Value;
     match value {
         Value::Object(map) => {
+            let windows_exe = matches!(
+                map.get("command"),
+                Some(Value::String(command)) if crate::wsl::starts_with_windows_exe(command)
+            );
             for (key, child) in map.iter_mut() {
                 match (key.as_str(), child) {
                     ("command", Value::String(command)) => {
-                        *command = crate::wsl::windows_paths_to_mnt(command);
+                        *command = if windows_exe {
+                            crate::wsl::windows_exe_to_mnt(command)
+                        } else {
+                            crate::wsl::windows_paths_to_mnt(command)
+                        };
                     }
-                    ("args", Value::Array(args)) => {
+                    ("args", Value::Array(args)) if !windows_exe => {
                         for arg in args.iter_mut() {
                             if let Value::String(arg) = arg {
                                 *arg = crate::wsl::windows_paths_to_mnt(arg);
                             }
                         }
                     }
+                    ("args", Value::Array(_)) => {}
                     (_, child) => convert_hook_commands_to_wsl(child),
                 }
             }
@@ -1417,21 +1429,28 @@ mod tests {
             "hooks": { "Stop": [{ "hooks": [
                 { "type": "command", "command": r"C:\Users\PC\tools\ai-memory.exe --data-dir C:\Users\PC\data hook --event stop --server-url http://127.0.0.1:49374" },
                 { "type": "command", "command": r"C:\bin\x.exe", "args": [r"D:\cfg\a.json", "--flag"] },
+                { "type": "command", "command": r#""C:\Program Files\x\y.exe" --cfg 'D:\My Data\c.json'"# },
+                { "type": "command", "command": r"C:\scripts\run.sh", "args": [r"D:\cfg\a.json"] },
                 { "type": "http", "url": "http://127.0.0.1:9123/hook" }
             ] }] }
         });
         convert_hook_commands_to_wsl(&mut settings);
         let hooks = &settings["hooks"]["Stop"][0]["hooks"];
+        // A Windows .exe keeps Windows-style arguments: only the program itself is a mount path.
         assert_eq!(
             hooks[0]["command"],
-            "/mnt/c/Users/PC/tools/ai-memory.exe --data-dir /mnt/c/Users/PC/data hook --event stop --server-url http://127.0.0.1:49374"
+            r"/mnt/c/Users/PC/tools/ai-memory.exe --data-dir C:\Users\PC\data hook --event stop --server-url http://127.0.0.1:49374"
         );
         assert_eq!(hooks[1]["command"], "/mnt/c/bin/x.exe");
+        assert_eq!(hooks[1]["args"], serde_json::json!([r"D:\cfg\a.json", "--flag"]));
         assert_eq!(
-            hooks[1]["args"],
-            serde_json::json!(["/mnt/d/cfg/a.json", "--flag"])
+            hooks[2]["command"],
+            r#""/mnt/c/Program Files/x/y.exe" --cfg 'D:\My Data\c.json'"#
         );
-        assert_eq!(hooks[2]["url"], "http://127.0.0.1:9123/hook");
+        // Anything that is not a Windows .exe runs in the distro and gets mount paths throughout.
+        assert_eq!(hooks[3]["command"], "/mnt/c/scripts/run.sh");
+        assert_eq!(hooks[3]["args"], serde_json::json!(["/mnt/d/cfg/a.json"]));
+        assert_eq!(hooks[4]["url"], "http://127.0.0.1:9123/hook");
     }
 
     const ROUTES: [(&str, super::HookRoute); 5] = [
